@@ -2,14 +2,14 @@ pipeline {
     agent any
 
     environment {
-        // Đảm bảo Jenkins tìm thấy các lệnh ruff, pytest sau khi cài đặt
+        // Cấu hình đường dẫn để Jenkins tìm thấy các lệnh python/pytest sau khi cài đặt
         PATH = "$HOME/.local/bin:${env.PATH}"
     }
 
     stages {
         stage('Checkout') {
             steps {
-                // Tương đương bước checkout scm trong file cũ [cite: 1]
+                // Tải mã nguồn từ GitHub
                 checkout scm
             }
         }
@@ -17,8 +17,13 @@ pipeline {
         stage('Environment Setup') {
             steps {
                 sh '''
-                    # Cập nhật pip và cài đặt các công cụ cần thiết vào thư mục user
-                    python3 -m pip install --upgrade pip --user
+                    # 1. Tải script cài đặt pip chính thức từ pypa vì server đang thiếu module pip
+                    curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+                    
+                    # 2. Chạy script để cài đặt pip vào thư mục cá nhân của user jenkins
+                    python3 get-pip.py --user
+                    
+                    # 3. Sử dụng pip vừa cài để cài đặt ruff, pytest và coverage
                     python3 -m pip install --user ruff pytest pytest-cov coverage
                 '''
             }
@@ -27,7 +32,7 @@ pipeline {
         stage('Lint with Ruff') {
             steps {
                 script {
-                    // Sử dụng catchError để Pipeline không dừng lại nếu có lỗi định dạng code [cite: 4, 5]
+                    // Kiểm tra lỗi trình bày code nhưng không làm dừng Pipeline nếu có lỗi nhẹ
                     catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
                         sh 'python3 -m ruff check .'
                     }
@@ -37,14 +42,15 @@ pipeline {
 
         stage('Run Unit Tests') {
             steps {
-                // Chạy test cho file test_main.py và đo độ bao phủ (coverage) [cite: 6]
+                // Chạy các bài test trong file test_main.py và đo độ bao phủ mã nguồn (coverage)
+                // Sử dụng python3 -m để đảm bảo gọi đúng module đã cài ở bước Setup
                 sh 'python3 -m pytest --cov=. --cov-report=term-missing test_main.py'
             }
         }
 
         stage('Generate Coverage Report') {
             steps {
-                // Xuất báo cáo coverage để Jenkins có thể hiển thị nếu cần [cite: 7]
+                // Hiển thị bảng tổng kết độ bao phủ của các bài test
                 sh 'python3 -m coverage report -m'
             }
         }
@@ -52,7 +58,7 @@ pipeline {
 
     post {
         always {
-            echo 'Quy trình CI hoàn tất.'
+            echo 'Quy trình CI trên Jenkins đã hoàn tất.'
         }
     }
 }
