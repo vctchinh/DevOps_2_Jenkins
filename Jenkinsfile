@@ -4,6 +4,7 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
+                // Tải mã nguồn từ GitHub [cite: 1]
                 checkout scm
             }
         }
@@ -11,6 +12,7 @@ pipeline {
         stage('Environment Setup') {
             steps {
                 sh '''
+                    # Tạo môi trường ảo và cài đặt thư viện
                     python3 -m venv venv
                     ./venv/bin/python3 -m pip install --upgrade pip
                     ./venv/bin/python3 -m pip install ruff pytest pytest-cov coverage
@@ -20,16 +22,14 @@ pipeline {
 
         stage('Lint with Ruff') {
             steps {
-                script {
-                    catchError(buildResult: 'SUCCESS', stageResult: 'FAILURE') {
-                        sh './venv/bin/python3 -m ruff check .'
-                    }
-                }
+                // Đã loại bỏ catchError. Nếu Ruff tìm thấy lỗi format, Pipeline sẽ dừng tại đây.
+                sh './venv/bin/python3 -m ruff check .'
             }
         }
 
         stage('Run Unit Tests') {
             steps {
+                // Chạy unit test từ file test_main.py [cite: 6]
                 sh './venv/bin/python3 -m pytest --cov=. --cov-report=term-missing test_main.py'
             }
         }
@@ -44,6 +44,9 @@ pipeline {
     post {
         always {
             echo 'Quy trình CI đã hoàn tất.'
+        }
+        failure {
+            echo 'Pipeline dừng lại do có lỗi xảy ra trong các bước trên.'
         }
     }
 }
