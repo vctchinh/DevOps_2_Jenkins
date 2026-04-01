@@ -31,3 +31,5 @@ if __name__ == "__main__":
         print(f"Tổng: {total}, Trung bình: {average}")
     except ValueError as e:
         print(f"Lỗi: {e}")
+
+#buid thu di em
