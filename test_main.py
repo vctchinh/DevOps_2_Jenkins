@@ -1,5 +1,5 @@
 import unittest
-from main import calculate_sum_and_average, get_numbers_from_user
+from main import calculate_sum_and_average
 
 class TestCalculateFunctions(unittest.TestCase):
 
